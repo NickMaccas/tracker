@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nick's Life Tracker</title>
+<style>
+:root{
+  --navy:#4F5F60;--navy2:#86999A;--white:#FFFFFF;
+  --red:#F3D9D6;--red-d:#A6483D;
+  --green:#DCE9DC;--green-d:#3F7A5C;
+  --diamond:#D9E6E4;--diamond-d:#3E6B6C;
+  --bg:#F3F1DF;--card:#FFFFFF;--panel:#ECE9D8;--border:#C9D8D6;
+  --text:#33403F;--muted:#7E9394;
+  --yellow:#F0E6C2;--warn:#B8863D;--flying-bg:#ECE9D8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* HEADER */
+.header{background:var(--navy);color:var(--bg);padding:14px 20px;display:flex;justify-content:space-between;align-items:center}
+.header-title{font-size:17px;font-weight:800;letter-spacing:.5px}
+.header-date{font-size:12px;opacity:.75;margin-top:2px}
+.header-right{text-align:right}
+.header-logged{font-size:22px;font-weight:800;line-height:1}
+.header-logged-label{font-size:10px;opacity:.7;text-transform:uppercase;letter-spacing:.5px}
+
+/* NAV */
+.nav{background:var(--navy2);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.nav-tab{padding:13px 22px;color:rgba(255,255,255,.65);cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;border-bottom:3px solid transparent;transition:all .2s;user-select:none}
+.nav-tab.active{color:#fff;border-bottom-color:var(--diamond)}
+
+/* LAYOUT */
+.content{max-width:920px;margin:0 auto;padding:18px}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* CARDS */
+.card{background:var(--card);border-radius:12px;padding:20px;margin-bottom:14px;box-shadow:0 2px 10px rgba(51,64,63,.08);border:1px solid var(--border)}
+.card-title{font-size:11px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid var(--navy);display:flex;justify-content:space-between;align-items:center}
+.card-title-sub{font-size:10px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0}
+
+/* DATE NAV */
+.date-nav{display:flex;align-items:center;gap:8px;margin-bottom:14px;background:var(--card);border-radius:10px;padding:10px 14px;border:1px solid var(--border);box-shadow:0 1px 4px rgba(51,64,63,.07)}
+.date-nav-btn{background:var(--bg);border:1px solid var(--border);border-radius:6px;width:34px;height:34px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;user-select:none}
+.date-nav-btn:hover{background:var(--navy);color:var(--bg);border-color:var(--navy)}
+.date-nav-center{flex:1;text-align:center}
+.date-nav-label{font-size:13px;font-weight:700;color:var(--navy)}
+.date-nav-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.today-btn{background:var(--navy);color:var(--bg);border:none;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0}
+.today-btn:hover{background:var(--navy2)}
+
+/* DAILY WIN CARD (read / body / brain) */
+.win-icon{font-size:26px;flex-shrink:0}
+
+/* REFLECTION */
+.reflect-label{font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px}
+
+/* FOCUS AREAS — reference only, not tickable */
+.focus-grid{display:flex;flex-direction:column;gap:10px}
+.focus-row{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:10px;background:var(--bg);border:1px solid var(--border);cursor:pointer;transition:background .2s}
+.focus-row:hover{background:var(--flying-bg)}
+.focus-icon{font-size:22px;flex-shrink:0;line-height:1.3}
+.focus-name{font-size:13px;font-weight:800;color:var(--navy)}
+.focus-blurb{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}
+
+/* BACKFILL */
+.backfill-banner{background:var(--yellow);border-left:4px solid var(--warn);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#7A5A1A}
+
+/* ACTIVITY GRID */
+.act-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:11px}
+.act-card{border:2px solid var(--border);border-radius:10px;padding:15px;cursor:pointer;transition:all .18s;background:var(--card);user-select:none;position:relative}
+.act-card:hover{border-color:var(--navy2);transform:translateY(-2px);box-shadow:0 4px 12px rgba(51,64,63,.12)}
+.act-card.ticked{border-color:var(--green-d);background:var(--green)}
+.act-card.flying-grey{opacity:.45;cursor:default;pointer-events:none}
+.act-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.act-icon{font-size:26px}
+.tick-circle{width:26px;height:26px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;color:transparent;flex-shrink:0;transition:all .2s}
+.act-card.ticked .tick-circle{background:var(--green-d);border-color:var(--green-d);color:#fff}
+.act-name{font-size:14px;font-weight:800;color:var(--navy)}
+.act-task{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4}
+.act-status{font-size:10px;margin-top:8px;font-weight:600}
+.act-status.urgent{color:var(--red-d)}.act-status.warn{color:var(--warn)}.act-status.ok,.act-status.done{color:var(--green-d)}
+.edit-task-btn{font-size:9px;color:var(--muted);cursor:pointer;position:absolute;bottom:8px;right:10px;opacity:.6;text-decoration:underline}
+.edit-task-btn:hover{opacity:1}
+.task-edit-input{width:100%;border:1px solid var(--border);border-radius:5px;padding:5px 8px;font-size:11px;font-family:inherit;margin-top:6px;color:var(--text);background:var(--panel)}
+.task-edit-input:focus{outline:none;border-color:var(--navy2)}
+
+/* NOTES */
+.notes-input{width:100%;border:1px solid var(--border);border-radius:8px;padding:11px;font-family:inherit;font-size:13px;resize:vertical;min-height:64px;color:var(--text);background:var(--panel)}
+.notes-input:focus{outline:none;border-color:var(--navy2)}
+
+/* PROGRESS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.stat-box{background:var(--bg);border-radius:10px;padding:16px;text-align:center}
+.stat-num{font-size:28px;font-weight:900;color:var(--navy)}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+.stat-badge{font-size:11px;font-weight:700;margin-top:4px;padding:2px 8px;border-radius:10px;display:inline-block}
+.badge-ahead{background:var(--green);color:var(--green-d)}.badge-behind{background:var(--red);color:var(--red-d)}.badge-ok{background:var(--diamond);color:var(--diamond-d)}
+.prog-row{margin-bottom:12px}
+.prog-header{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.prog-bar{height:9px;background:#E3E9E7;border-radius:5px;overflow:hidden}
+.prog-fill{height:100%;border-radius:5px;transition:width .6s ease}
+.fill-good{background:var(--green-d)}.fill-warn{background:var(--warn)}.fill-behind{background:var(--diamond-d)}
+.breakdown-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
+.breakdown-box{border-radius:10px;padding:14px;text-align:center}
+.bd-num{font-size:26px;font-weight:900}.bd-lbl{font-size:11px;margin-top:2px;font-weight:600}.bd-pct{font-size:14px;font-weight:800;margin-top:4px}
+
+/* HISTORY CALENDAR */
+.cal-header{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px}
+.cal-day-lbl{font-size:10px;color:var(--muted);text-align:center;font-weight:600}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-cell{aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;transition:transform .1s}
+.cal-cell:hover{transform:scale(1.15)}
+.cal-future{background:transparent;border:1px dashed #D0D8E8;cursor:default}
+.cal-future:hover{transform:none}
+.cal-0{background:#E6E5D5;color:#A8A89A}
+.cal-building{background:var(--diamond);color:var(--diamond-d)}.cal-green{background:var(--green);color:var(--green-d)}.cal-diamond{background:var(--diamond);color:var(--diamond-d)}
+
+/* GOALS */
+.skill-goal-card{border-left:5px solid var(--navy);padding:14px 16px;margin-bottom:12px;background:var(--bg);border-radius:0 10px 10px 0}
+.sg-title{font-size:14px;font-weight:800}
+.sg-now{font-size:12px;color:var(--text);margin-top:5px;line-height:1.6}
+.sg-milestone{font-size:11px;background:var(--yellow);padding:5px 10px;border-radius:5px;margin-top:8px;display:inline-block;font-weight:600;color:#7A5A1A}
+.q-selector{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.q-btn{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid var(--border);background:var(--card);color:var(--muted);transition:all .2s}
+.q-btn.active{background:var(--navy);color:var(--bg);border-color:var(--navy)}
+.q-btn.current{border-color:var(--navy2)}
+.ms-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;line-height:1.5}
+.ms-item:last-child{border-bottom:none}
+.ms-item input[type=checkbox]{width:17px;height:17px;flex-shrink:0;margin-top:2px;accent-color:var(--navy2);cursor:pointer}
+.ms-item.done-item{text-decoration:line-through;color:var(--muted)}
+
+/* ACCORDION — deep dives */
+.accordion-item{margin-bottom:10px;border-radius:10px;overflow:hidden;border:2px solid var(--border)}
+.accordion-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;user-select:none;transition:background .2s}
+.accordion-header:hover{background:var(--bg)}
+.accordion-header.open{background:var(--navy);color:var(--bg)}
+.accordion-title{font-size:14px;font-weight:800}
+.accordion-arrow{font-size:16px;transition:transform .3s}
+.accordion-header.open .accordion-arrow{transform:rotate(180deg)}
+.accordion-body{display:none;padding:18px;background:var(--panel);border-top:1px solid var(--border)}
+.accordion-body.open{display:block}
+
+/* DEEP DIVE CONTENT */
+.dd-intro{font-size:13px;line-height:1.8;color:var(--text);margin-bottom:16px}
+.dd-section{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:14px 0 8px 0}
+.dd-list{padding-left:18px;font-size:13px;line-height:1.9;color:var(--text)}
+.dd-res-item{padding:7px 0;border-bottom:1px solid #EEF2F8;font-size:13px;line-height:1.5}
+.dd-res-item:last-child{border-bottom:none}
+.dd-res-item.top{font-weight:700;color:var(--navy)}
+.dd-res-note{font-size:11px;color:var(--muted);margin-top:2px}
+.prog-path{background:var(--bg);border-radius:8px;padding:14px;margin-top:4px}
+.prog-path-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:10px}
+.prog-path-item{display:flex;gap:12px;margin-bottom:10px}
+.prog-path-dot{width:22px;height:22px;border-radius:50%;background:var(--navy);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0;margin-top:1px}
+.prog-path-period{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:2px}
+.prog-path-desc{font-size:12px;color:var(--muted);line-height:1.6}
+
+/* READING LIST */
+.reading-section{margin-bottom:14px}
+.reading-cat{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;background:var(--navy);color:var(--bg);padding:4px 10px;border-radius:4px;display:inline-block;margin-bottom:7px}
+.reading-item{font-size:13px;padding:5px 0;border-bottom:1px solid #F0F4F8;line-height:1.4}
+.reading-item.top{font-weight:700;color:var(--navy)}
+
+/* MISC */
+.fulfil-quote{background:linear-gradient(135deg,#ECE9D8,#DEE6E3);border-left:5px solid var(--navy);padding:18px;border-radius:0 10px 10px 0;font-style:italic;font-size:14px;color:var(--text);line-height:1.7}
+.fulfil-dest{font-size:13px;color:var(--muted);margin-top:12px;font-style:normal;line-height:1.6}
+.parking-input{width:100%;min-height:90px;border:1px solid var(--border);border-radius:8px;padding:12px;font-family:inherit;font-size:13px;resize:vertical;background:var(--panel);color:var(--text);line-height:1.6}
+.parking-input:focus{outline:none;border-color:var(--navy2)}
+.reflect-area{width:100%;min-height:72px;border:1px solid var(--border);border-radius:8px;padding:11px;font-family:inherit;font-size:13px;resize:vertical;background:var(--panel);color:var(--text)}
+.reflect-area:focus{outline:none;border-color:var(--navy2)}
+
+@media(max-width:600px){.act-grid{grid-template-columns:1fr 1fr}.stats-grid{grid-template-columns:1fr 1fr}.content{padding:12px}.score-num{font-size:42px}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">NICK'S LIFE TRACKER</div>
+    <div class="header-date" id="hdr-date"></div>
+  </div>
+  <div class="header-right">
+    <div class="header-logged" id="hdr-logged">0</div>
+    <div class="header-logged-label">Days Logged</div>
+  </div>
+</div>
+
+<div class="nav">
+  <div class="nav-tab active" onclick="showTab('today',this)">🔥 Log</div>
+  <div class="nav-tab" onclick="showTab('progress',this)">📊 Progress</div>
+  <div class="nav-tab" onclick="showTab('goals',this)">🗺️ Goals</div>
+  <div class="nav-tab" onclick="showTab('history',this)">📅 History</div>
+</div>
+
+<div class="content">
+
+  <!-- LOG -->
+  <div class="tab-panel active" id="tab-today">
+    <div class="date-nav">
+      <div class="date-nav-btn" onclick="shiftDay(-1)">◀</div>
+      <div class="date-nav-center">
+        <div class="date-nav-label" id="nav-date-label"></div>
+        <div class="date-nav-sub" id="nav-date-sub"></div>
+      </div>
+      <div class="date-nav-btn" id="nav-next-btn" onclick="shiftDay(1)">▶</div>
+      <button class="today-btn" id="today-jump-btn" onclick="goToToday()" style="display:none">Jump to Today</button>
+    </div>
+    <div id="backfill-banner"></div>
+    <div class="card">
+      <div class="card-title">Three a Day <span class="card-title-sub">tap to log · doable whether you're at work or off</span></div>
+      <div class="act-grid" id="act-grid"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Daily Journal</div>
+      <div class="reflect-label">What you've learned</div>
+      <textarea class="notes-input" id="notes-learned" placeholder="Doesn't have to be profound — a line is enough."></textarea>
+      <div class="reflect-label" style="margin-top:12px">What you did well</div>
+      <textarea class="notes-input" id="notes-wentwell" placeholder="A small win counts."></textarea>
+      <div class="reflect-label" style="margin-top:12px">How tomorrow can be better</div>
+      <textarea class="notes-input" id="notes-improve" placeholder="Optional — one thing to try differently."></textarea>
+    </div>
+    <div class="card">
+      <div class="card-title">Focus Areas <span class="card-title-sub">the longer game these feed into · not ticked day to day</span></div>
+      <div class="focus-grid" id="focus-areas"></div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="tab-panel" id="tab-progress">
+    <div class="card"><div class="card-title">2-Year Journey — At a Glance</div><div class="stats-grid" id="overview-stats"></div></div>
+    <div class="card"><div class="card-title">Day Breakdown</div><div id="score-breakdown"></div></div>
+    <div class="card"><div class="card-title">Streaks &amp; Totals</div><div id="skill-alltime"></div></div>
+    <div class="card"><div class="card-title">Last 30 Days</div><div id="skill-30day"></div></div>
+  </div>
+
+  <!-- GOALS -->
+  <div class="tab-panel" id="tab-goals">
+    <div class="card"><div class="card-title">The 5 Focus Areas — Quick View</div><div id="skills-quick"></div></div>
+    <div class="card">
+      <div class="card-title">Quarterly Milestones <span class="card-title-sub">auto-detects quarter · ticks save automatically</span></div>
+      <div class="q-selector" id="q-selector"></div>
+      <div id="q-milestones"></div>
+    </div>
+    <div class="card"><div class="card-title">Focus Area Deep Dives <span class="card-title-sub">tap to expand</span></div><div id="deep-dives"></div></div>
+    <div class="card"><div class="card-title">Full Reading List</div><div id="reading-list"></div></div>
+    <div class="card">
+      <div class="card-title">Parking Lot <span class="card-title-sub">ideas, half-baked plans — review quarterly</span></div>
+      <textarea class="parking-input" id="parking-lot" placeholder="Dump ideas here so they don't clutter your head but don't get lost..."></textarea>
+    </div>
+    <div class="card">
+      <div class="card-title">Why You're Doing This</div>
+      <div class="fulfil-quote">
+        "Doing something hard, to an excellent standard, that most cannot. Being proud of the journey and the destination."
+        <div class="fulfil-dest">A Jetstar captain who built the modern aerodynamics education platform for Australian student pilots, living a great life in Australia, with the financial security and freedom to live on his own terms.<br><br><strong style="color:var(--navy)">Make the kid proud.</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="tab-panel" id="tab-history">
+    <div class="card">
+      <div class="card-title">Last 63 Days <span class="card-title-sub">tap any day to edit</span></div>
+      <div class="cal-header"><div class="cal-day-lbl">Mon</div><div class="cal-day-lbl">Tue</div><div class="cal-day-lbl">Wed</div><div class="cal-day-lbl">Thu</div><div class="cal-day-lbl">Fri</div><div class="cal-day-lbl">Sat</div><div class="cal-day-lbl">Sun</div></div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap;font-size:11px;color:var(--muted)">
+        <span>⬜ Open day</span><span style="color:var(--diamond-d)">🟦 1 done</span><span style="color:var(--green-d)">🟩 2 done</span><span style="color:var(--diamond-d)">💎 All 3</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Monthly Reflection <span class="card-title-sub">fill at month-end — 2 minutes, what worked, what to change</span></div>
+      <div id="monthly-reflections"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  DAILY_ITEMS — the 3 things worth ticking every single day, work or not
+// ============================================================
+const DEFAULT_TASKS = {
+  read:  'Read for 15 minutes — anything counts, fiction included',
+  body:  'Work out your body — gym, run, sport, a walk, whatever moves',
+  brain: 'Work out your brain — study, build something, practise a skill',
+};
+
+const DAILY_ITEMS = [
+  {id:'read',  icon:'📖', name:'Read'},
+  {id:'body',  icon:'💪', name:'Move'},
+  {id:'brain', icon:'🧠', name:'Learn'},
+];
+
+// FOCUS_AREAS — the 5 longer-term interests. Reference only now, not
+// ticked day to day — visible on the home screen and in full in Goals.
+const SKILLS = [
+  {id:'aviation',     icon:'🛩️', name:'Aviation',      blurb:'Command upgrade in 2–3 years — deep system knowledge and decision-making, drilled on the line.'},
+  {id:'coding',       icon:'💻', name:'Coding',        blurb:'Boot.dev, kept enjoyable — short sessions, nothing to prove, just something you like building.'},
+  {id:'finance',      icon:'💰', name:'Finance',       blurb:'Understanding the reasoning behind Riley\'s advice — tax, super, and long-term wealth beyond salary.'},
+  {id:'neuroscience', icon:'🧠', name:'Neuroscience',  blurb:'How learning, stress, and decision-making actually work — applied on the line and in study.'},
+  {id:'longevity',    icon:'🏃', name:'Longevity',     blurb:'Training, recovery, and sleep, done with evidence behind it rather than guesswork.'},
+];
+
+// ============================================================
+//  QUARTERLY MILESTONES — 5 items per quarter, one per focus area
+//  Order matches SKILLS array: aviation, coding, finance, neuroscience, longevity
+// ============================================================
+const ALL_MILESTONES = {
+  Q3_2026:{label:'Q3 2026',due:'by 30 Sep 2026',items:[
+    {id:'q3_avi', text:'Aviation: OM1 and OM4 read in full. Decision making model (T-DODAR) built, understood, and drilled consistently.'},
+    {id:'q3_cod', text:'Coding: Boot.dev streak going 2-3 sessions a week. Python basics — functions, lists, dictionaries — done.'},
+    {id:'q3_fin', text:'Finance: Barefoot Investor finished. First proper session with Riley done, questions prepared in advance. Super and concessional cap understood.'},
+    {id:'q3_neu', text:'Neuroscience: Make It Stick read. Retrieval practice and spaced repetition applied to Boot.dev study. One real high-pressure moment on the line consciously managed.'},
+    {id:'q3_lon', text:'Longevity: Outlive finished. Zone 2 cardio 3x/week established. Sleep protocol consistently in place.'},
+  ]},
+  Q4_2026:{label:'Q4 2026',due:'by 31 Dec 2026',items:[
+    {id:'q4_avi', text:'Aviation: OM18, OM6, OM5 read. Turn the Ship Around done. Command presence consciously applied on the line.'},
+    {id:'q4_cod', text:'Coding: Boot.dev streak still running. Classes and basic data structures done. First small script built unaided.'},
+    {id:'q4_fin', text:'Finance: Super contributions reviewed with Riley for the FY. Clear understanding of why the current tax structure and ETF setup was chosen, not just what it is.'},
+    {id:'q4_neu', text:'Neuroscience: Sources of Power read. A stress-regulation technique (tactical breathing) practised and tested in a real high-pressure moment — sim, flight, or otherwise.'},
+    {id:'q4_lon', text:'Longevity: Training structure locked in. Zone 2 and strength consistently running. Evidence-based nutrition in place.'},
+  ]},
+  Q1_2027:{label:'Q1 2027',due:'by 31 Mar 2027',items:[
+    {id:'q1_avi', text:'Aviation: The Captain Class done. Anderson aerodynamics Ch.1-6 read. Deep system knowledge actively building.'},
+    {id:'q1_cod', text:'Coding: Boot.dev intermediate track underway. Comfortable reading and debugging someone else\'s Python without help.'},
+    {id:'q1_fin', text:'Finance: Net worth statement built with Riley. 5-year financial projection clear — including what "beyond salary" wealth actually requires.'},
+    {id:'q1_neu', text:'Neuroscience: Peak read. Deliberate practice principles applied to flying skill and aero teaching. Noticeably calmer under pressure on the line.'},
+    {id:'q1_lon', text:'Longevity: Recovery and nutrition approach evidence-based and consistent. Sleep tracking reviewed and applied.'},
+  ]},
+  Q2_2027:{label:'Q2 2027',due:'by 30 Jun 2027',items:[
+    {id:'q2_avi', text:'Aviation: Command-ready mindset is default on the line. Others come to you with questions. Deep knowledge evident.'},
+    {id:'q2_cod', text:'Coding: Boot.dev backend track well underway. Could build a small working tool from scratch.'},
+    {id:'q2_fin', text:'Finance: Wealth strategy confirmed with Riley for year 2. Understand the reasoning behind every recommendation, not taking it on faith.'},
+    {id:'q2_neu', text:'Neuroscience: Behave read. Clear understanding of how stress and decision-making connect. The "monkey brain" override is named and consistently managed, not just endured.'},
+    {id:'q2_lon', text:'Longevity: 2 years of consistent evidence in tracker. Long-game approach fully embedded. Body and brain optimised.'},
+  ]},
+};
+
+function getCurrentQuarter(){
+  const n=new Date(),y=n.getFullYear(),m=n.getMonth()+1;
+  if(y===2026&&m<=9)return'Q3_2026';
+  if(y===2026)return'Q4_2026';
+  if(y===2027&&m<=3)return'Q1_2027';
+  if(y===2027&&m<=6)return'Q2_2027';
+  return'Q3_2026';
+}
+
+// ============================================================
+//  DEEP DIVES
+// ============================================================
+const DEEP_DIVES = [
+  {
+    num:'1',name:'Aviation Mastery',colour:'#3D6B78',
+    intro:'Aviation mastery is about going deeper than your FO role demands. Most pilots learn what they need to hold the job and stop there. You are not doing that. The goal is deep operational knowledge, genuine command presence, and an aerodynamics understanding that makes you a more complete pilot — before you hold the title of captain.',
+    practice:[
+      'Fly every sector with deliberate intention — not on autopilot even when the aircraft is',
+      'Read OM1, OM4, OM18, OM6, OM5 in full — not to pass a test, because a future captain should know them cold',
+      'Build and drill your decision making model (T-DODAR/FORDEC) until the structure is automatic under pressure',
+      'Actively develop command presence on every sector — brief clearly, assign tasks cleanly, no hedging',
+      'Study Anderson aerodynamics at a level most pilots never reach — it makes you a better stick and a better teacher',
+      'Observe great captains you fly with and consciously steal what works',
+    ],
+    resources:[
+      {t:'Turn the Ship Around — L. David Marquet',top:true,note:'The best leadership book for people who command. Read it this year.'},
+      {t:'The Captain Class — Sam Walker',note:'What separates truly great leaders. Directly transferable to the cockpit.'},
+      {t:'Fundamentals of Aerodynamics — John D. Anderson',top:true,note:'The main aero textbook. Buy physical. Reference for years.'},
+      {t:'Aerodynamics for Naval Aviators',note:'More pilot-friendly companion. Readable on a flight.'},
+      {t:'The Checklist Manifesto — Atul Gawande',note:'Decision making and checklists in high-stakes environments. Written by a surgeon but directly applicable to aviation command.'},
+      {t:'Skyfaring — Mark Vanhoenacker',note:"A 747 pilot's love letter to long-haul flying. Beautiful and motivating."},
+    ],
+    progression:[
+      {period:'Q1 — Mo 1–3',desc:'OM1 and OM4 read in full, notes taken. Decision making model picked (T-DODAR), understood step by step, drilled out loud until automatic. Turn the Ship Around started.'},
+      {period:'Q2 — Mo 4–6',desc:'Turn the Ship Around finished. OM18 read. Command presence deliberate every single sector — catch every hedge and correct it in the moment.'},
+      {period:'Q3 — Mo 7–9',desc:'OM6 and OM5 read — full OM set now complete. The Captain Class finished. Anderson aerodynamics chapters 1–4 done.'},
+      {period:'Q4 — Mo 10–12',desc:'Anderson chapters 5–9 — potential flow, circulation, lift, the panel method. Decision model now automatic even under simulated pressure. Could answer any captain cold on any OM.'},
+      {period:'Q5 — Mo 13–15',desc:'The Checklist Manifesto read. Anderson finished in full. Start a personal "captain\'s notebook" — your own systems knowledge, scenarios, and decisions documented in your own words.'},
+      {period:'Q6 — Mo 16–18',desc:'Mentally rehearse command scenarios regularly — not just react when asked. Deep system knowledge across the fleet is now genuinely comprehensive, not just OM-deep.'},
+      {period:'Q7 — Mo 19–21',desc:'Actively informally mentoring junior FOs when the opportunity arises. Command application timeline is concrete — you know exactly what is required and where you stand against it.'},
+      {period:'Q8 — Mo 22–24',desc:'Command-ready mindset is the default, not a performance. Others on the line come to you with questions. The sim project and aero content are now genuine extensions of real mastery, not separate hobbies.'},
+    ]
+  },
+  {
+    num:'2',name:'Coding',colour:'#5C6B8A',
+    intro:'Coding is Boot.dev, kept enjoyable and low-stakes — not a career pivot, not a hedge, just something you\'re genuinely drawn to building on its own terms. The goal here isn\'t a finished project or a deadline, it\'s retention through consistency: short sessions, spaced out, done because they\'re satisfying, not because they\'re owed to a plan.',
+    practice:[
+      'A fixed slot on days off — same time, same spot, so it doesn\'t rely on motivation showing up',
+      'Short sessions — 20 to 30 minutes is enough to retain and build the habit; longer turns it into a chore',
+      'Little and often over big and rare — 2-3 short sessions a week beats one long grind for actually retaining it',
+      'Lean on Boot.dev\'s own streaks and progress tracking rather than inventing a parallel system',
+      'Finish small, dumb, complete things every few weeks — a script, a tiny tool — so it stays playful, not just homework',
+    ],
+    resources:[
+      {t:'Boot.dev',top:true,note:'The only resource for this one now. Structured, sequential, has its own streak tracking built in.'},
+    ],
+    progression:[
+      {period:'Q1 — Mo 1–3',desc:'Streak established — 2-3 short Boot.dev sessions a week, same slot on days off. Python basics: functions, lists, dictionaries.'},
+      {period:'Q2 — Mo 4–6',desc:'Streak holding. Classes and basic data structures done. First tiny finished script — nothing fancy, just complete.'},
+      {period:'Q3 — Mo 7–9',desc:'Comfortable reading and debugging someone else\'s Python without help. Still enjoying it — if not, worth checking why.'},
+      {period:'Q4 — Mo 10–12',desc:'A second small finished thing built, purely because it was fun. No pressure toward a bigger project unless one genuinely calls to you.'},
+    ]
+  },
+  {
+    num:'3',name:'Financial Literacy',colour:'#3F7A5C',
+    intro:'Financial literacy isn\'t about replacing Riley — it\'s about understanding the reasoning well enough to ask good questions and sanity-check advice, while he owns the technical execution. Career progression (command upgrade) is the biggest lever for income; this skill is about what happens to that income afterwards. The expensive-house-and-fast-car version of wealth is genuinely achievable on a pilot income — but it\'s built through high income + disciplined investing + time, not a shortcut, and definitely not through comparing your real life to a curated Instagram feed.',
+    practice:[
+      'Learn the basics of how super, tax brackets, and investing actually work — enough to understand *why* Riley recommends what he recommends, not to replace him',
+      'Maximising concessional super contributions to the annual cap — the single highest-leverage tax move for a high-income pilot',
+      'Understanding your ETF holdings — what you own, why, and how it is taxed, not just setting and forgetting',
+      'Prepping specific questions before each Riley session rather than turning up with none — strategy, super, tax, investing, property, and understanding concepts like asset-backed/margin lending at a general level so the conversation is a two-way one',
+      'Tracking net worth quarterly — the number that actually matters, not monthly cash flow',
+      'Lifestyle discipline — not tripling your spending when you make captain. The gap between income and spending is the wealth equation.',
+    ],
+    resources:[
+      {t:'Barefoot Investor — Scott Pape',top:true,note:'Read this first. Practical, Australian, covers banking, super, investing, insurance. Implement as you go.'},
+      {t:'Psychology of Money — Morgan Housel',top:true,note:'The behavioural side of money. Why smart people make bad financial decisions. Highly readable.'},
+      {t:'Strong Money Australia — Dave Gow',note:'Australian focus, ETF-based investing, financial independence. Directly relevant to you.'},
+      {t:'Passive Investing Australia — passiveinvestingaustralia.com',note:'Best free technical content on ETF structure, debt recycling, and tax efficiency in Australia.'},
+      {t:'Riley (financial adviser)',top:true,note:'Owns the technical execution — tax structure, investment selection, specific numbers. Come prepared with questions; ask him to explain the reasoning, not just the recommendation.'},
+    ],
+    progression:[
+      {period:'Q1 — Mo 1–3',desc:'Barefoot Investor read. Super balance and concessional contributions cap both clearly known. First prepped session with Riley.'},
+      {period:'Q2 — Mo 4–6',desc:'Effective tax rate understood. Salary sacrifice to super running if it makes sense for you. Comfortable asking Riley to explain the "why" behind a recommendation, not just accepting it.'},
+      {period:'Q3 — Mo 7–9',desc:'Psychology of Money read. ETF allocation reviewed and understood — not just set and forgotten.'},
+      {period:'Q4 — Mo 10–12',desc:'Strong Money Australia read. Net worth spreadsheet built. A specific 5-year financial target set and written down with Riley.'},
+    ]
+  },
+  {
+    num:'4',name:'Neuroscience and Performance',colour:'#7A5A82',
+    intro:'This one started with a golf lesson — the instructor structured the session deliberately around how the brain actually learns, and it clicked. Neuroscience and Performance is about understanding how the brain learns, processes information, and regulates the body under stress — including the fight-or-flight override you have to manage in the cockpit when something goes wrong. It feeds two things directly: staying clear-headed when the "monkey brain" wants to take over during an abnormal, and teaching aerodynamics in a way that actually sticks, the way a good instructor structures a lesson.',
+    practice:[
+      'Read deliberately — Make It Stick, Sources of Power, Peak, Behave — and look for the one principle you can apply that week',
+      'Apply a learning principle (retrieval practice, spaced repetition, interleaving) to how you study Python, Maths, or aerodynamics — notice if it actually improves retention',
+      'Practise a stress-regulation technique (tactical/box breathing, extending the exhale) in low-stakes moments so it is automatic when it actually matters',
+      'When the fight-or-flight response shows up on the line — name it in the moment, then consciously override it rather than just enduring it',
+      'After any high-pressure moment, debrief it the way a CRM debrief works: what triggered it, how you responded, what you would do differently',
+      'Watch how good instructors (the golf coach, sim instructors, anyone) structure a lesson — reverse-engineer the technique and steal it for aero content',
+      'One session = a chapter, OR consciously applying a stress technique under real pressure and reflecting on it, OR restructuring how you teach or study using a real learning principle',
+    ],
+    resources:[
+      {t:'Make It Stick — Peter C. Brown',top:true,note:'How learning actually works — retrieval practice, spaced repetition, interleaving. Read this first and apply it immediately to your own study sessions.'},
+      {t:'Sources of Power — Gary Klein',top:true,note:'Naturalistic decision-making under time pressure and uncertainty, built from studying firefighters and other experts working under genuine stakes. Directly maps onto cockpit decision-making.'},
+      {t:'Peak — Anders Ericsson',note:'The real science of deliberate practice and how true expertise is built. This is what your golf instructor was doing without naming it.'},
+      {t:'Behave — Robert Sapolsky',note:'The definitive book on why humans do what they do — stress, aggression, decision-making, all from the biology up. Long but excellent.'},
+      {t:'Atomic Habits — James Clear',note:'Habit formation and behaviour change. Ties directly back into why the tracker system itself works.'},
+    ],
+    progression:[
+      {period:'Q1 — Mo 1–3',desc:'Make It Stick read. Retrieval practice and spaced repetition applied directly to Boot.dev and Khan sessions — testing yourself instead of just re-reading. Start noticing your own stress responses in daily life.'},
+      {period:'Q2 — Mo 4–6',desc:'Sources of Power read. Tactical breathing learned and drilled. Practised in low-stakes moments — before a sim session, before a hard conversation — so it is automatic before it matters.'},
+      {period:'Q3 — Mo 7–9',desc:'Peak read. Deliberate practice principles applied directly to a flying skill or to how you structure aero content. You can feel the difference between practising and just doing.'},
+      {period:'Q4 — Mo 10–12',desc:'Behave read. The full picture connecting stress, decision-making, and behaviour is built. You can explain the "monkey brain" override clearly to someone else, not just experience it.'},
+      {period:'Q5 — Mo 13–15',desc:'Atomic Habits read. Apply everything so far to one real high-pressure event — a sim check, an abnormal, anything — and debrief it properly afterward using what you have learned.'},
+      {period:'Q6 — Mo 16–18',desc:'Teach someone else using a deliberate learning principle — a junior pilot, anyone — structured the way the golf instructor structured your lesson. Test whether it actually lands better.'},
+      {period:'Q7 — Mo 19–21',desc:'Build the science directly into the aero content — structured with retrieval and spacing in mind, not just an information dump. Notice if engagement or understanding improves.'},
+      {period:'Q8 — Mo 22–24',desc:'Stress regulation under real pressure is now default, not effortful. Your teaching method is genuinely informed by how the brain learns, not guesswork dressed up as instinct.'},
+    ]
+  },
+  {
+    num:'5',name:'Longevity Science',colour:'#A67A3D',
+    intro:'Longevity science is about understanding how to optimise your health for a life that could genuinely reach 90–95. You already have the gym habit — that puts you ahead of most. The next layer is training and living intelligently: zone 2 cardio, structured strength, sleep as a non-negotiable, and understanding what the science actually says about extending healthspan, not just lifespan.',
+    practice:[
+      'Strength training: structural compound movements, progressive overload, training for muscle mass you will still have at 80',
+      'Zone 2 cardio: 3x per week, 30–45 minutes, conversational pace — the most evidence-backed longevity exercise',
+      'Sleep: 8 hours, consistent schedule, dark and cool — Peter Attia calls this the most powerful performance drug available',
+      'Understanding pilot fatigue at a deeper level than regulations — what poor sleep actually does to your decision-making',
+      'Nutrition: enough protein to support training, mostly whole foods, no obsessing — simple and sustainable',
+      'One session = any training session, zone 2 run, deliberate recovery review, OR applying an Outlive principle — this remains clear even after the initial habits are set',
+    ],
+    resources:[
+      {t:'Outlive — Peter Attia',top:true,note:'Read this first. The most comprehensive evidence-based longevity book available. Directly actionable.'},
+      {t:'Lifespan — David Sinclair',top:true,note:'The biology of why we age and what we can do about it. More speculative than Attia but fascinating.'},
+      {t:'Why We Sleep — Matthew Walker',note:'The book on sleep science. Critical for anyone working shifts and crossing time zones.'},
+      {t:'Huberman Lab Podcast — Andrew Huberman',note:'Free. Evidence-based. Episodes on sleep, exercise, nutrition, and cognitive performance.'},
+      {t:'The Drive Podcast — Peter Attia',note:'Free. Long-form and deeply technical. Pick episodes relevant to what you are working on.'},
+    ],
+    progression:[
+      {period:'Q1 — Mo 1–3',desc:'Outlive read. Three key habits implemented: structured strength training, zone 2 cardio 3x/week, sleep protocol with a consistent schedule and 8-hour target.'},
+      {period:'Q2 — Mo 4–6',desc:'Lifespan read. The biology of ageing properly understood. Nutrition reviewed — enough protein to actually support the training load.'},
+      {period:'Q3 — Mo 7–9',desc:'Why We Sleep read. Pilot-specific sleep strategies applied for early starts, late finishes, and time-zone disruption.'},
+      {period:'Q4 — Mo 10–12',desc:'All four pillars — exercise, sleep, nutrition, stress management — running consistently and evidence-based, not just on instinct.'},
+      {period:'Q5 — Mo 13–15',desc:'Get baseline metrics done properly — VO2 max test, body composition, basic bloodwork. Real numbers instead of just habits and vibes.'},
+      {period:'Q6 — Mo 16–18',desc:'Build an actual periodised training program — structured progression, not just "going to the gym." Recovery tracked deliberately, not assumed.'},
+      {period:'Q7 — Mo 19–21',desc:'Review 18 months of data. What is actually working physically? Adjust the program based on evidence from your own body, not just the books.'},
+      {period:'Q8 — Mo 22–24',desc:'Re-test the baseline metrics from Q5 — VO2 max, body composition. Measurable improvement, not just a feeling of being fitter. Training, sleep, and recovery are now fully evidence-based and habitual.'},
+    ]
+  },
+];
+
+const READING_ALL = {
+  'Aviation ✈️':[
+    {t:'Turn the Ship Around — Marquet',top:true},{t:'The Captain Class — Walker'},
+    {t:'The Checklist Manifesto — Gawande',top:true},
+    {t:'Skyfaring — Vanhoenacker'},{t:'Fate is the Hunter — Gann'},
+  ],
+  'Aerodynamics 🛩️':[
+    {t:'Fundamentals of Aerodynamics — Anderson',top:true},{t:'Aerodynamics for Naval Aviators'},
+  ],
+  'Neuroscience and Performance 🧠':[
+    {t:'Make It Stick — Brown',top:true},{t:'Sources of Power — Klein',top:true},
+    {t:'Peak — Ericsson'},{t:'Behave — Sapolsky'},{t:'Atomic Habits — Clear'},
+  ],
+  'Coding 💻':[{t:'Automate the Boring Stuff — Sweigart'},{t:'The Pragmatic Programmer'}],
+  'Maths & Physics 📐':[
+    {t:"Surely You're Joking Mr Feynman!",top:true},{t:'Thinking Fast and Slow — Kahneman'},
+  ],
+  'Finance 💰':[
+    {t:'Barefoot Investor — Pape',top:true},{t:'Psychology of Money — Housel'},
+    {t:'Strong Money Australia — Gow'},
+  ],
+  'Longevity 🏃':[
+    {t:'Outlive — Peter Attia',top:true},{t:'Lifespan — David Sinclair'},
+    {t:'Why We Sleep — Walker'},
+  ],
+  'Career and Life 🎯':[
+    {t:"So Good They Can't Ignore You — Newport"},{t:'The Pathless Path — Millerd'},
+    {t:'Endurance — Lansing'},{t:'Shoe Dog — Phil Knight'},
+  ],
+};
+
+// ============================================================
+//  DATA
+// ============================================================
+const KEY='nick_tracker_v7';
+const START=new Date('2026-05-20T00:00:00');
+const TOTAL_DAYS=730;
+
+function load(){
+  try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}
+  return{
+    entries:{
+      '2026-05-20':{read:true,body:true,brain:true,notes:"Today is the day it all started"},
+      '2026-05-21':{read:true,body:true,notes:''},
+      '2026-05-22':{brain:true,body:true,notes:''},
+    },
+    milestones:{},reflections:{},parking:'',customTasks:{},
+    activeQ:getCurrentQuarter(),openDives:{},
+  };
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(DB));}
+
+// One-time migration: communication -> neuroscience (preserves all historical ticks)
+function migrateCommToNeuro(db){
+  let changed=false;
+  for(const date in db.entries){
+    const e=db.entries[date];
+    if(e&&Object.prototype.hasOwnProperty.call(e,'communication')){
+      if(!Object.prototype.hasOwnProperty.call(e,'neuroscience')) e.neuroscience=e.communication;
+      delete e.communication;
+      changed=true;
+    }
+  }
+  if(db.customTasks&&db.customTasks.communication){
+    if(!db.customTasks.neuroscience) db.customTasks.neuroscience=db.customTasks.communication;
+    delete db.customTasks.communication;
+    changed=true;
+  }
+  if(db.milestones){
+    for(const key in db.milestones){
+      if(key.includes('_com')&&!key.includes('_communication_legacy')){
+        const newKey=key.replace('_com','_neu');
+        if(db.milestones[key]&&!(newKey in db.milestones)) db.milestones[newKey]=db.milestones[key];
+        changed=true;
+      }
+    }
+  }
+  if(changed) save();
+}
+// One-time migration: technical -> coding (preserves all historical ticks; Technical was the old aerofoil-sim/Khan Academy skill, now Boot.dev-only)
+function migrateTechToCoding(db){
+  let changed=false;
+  for(const date in db.entries){
+    const e=db.entries[date];
+    if(e&&Object.prototype.hasOwnProperty.call(e,'technical')){
+      if(!Object.prototype.hasOwnProperty.call(e,'coding')) e.coding=e.technical;
+      delete e.technical;
+      changed=true;
+    }
+  }
+  if(db.customTasks&&db.customTasks.technical){
+    delete db.customTasks.technical;
+    changed=true;
+  }
+  if(db.milestones){
+    for(const key in db.milestones){
+      if(key.includes('_tec')){
+        const newKey=key.replace('_tec','_cod');
+        if(db.milestones[key]&&!(newKey in db.milestones)) db.milestones[newKey]=db.milestones[key];
+        changed=true;
+      }
+    }
+  }
+  if(changed) save();
+}
+let DB=load();
+migrateCommToNeuro(DB);
+migrateTechToCoding(DB);
+let activeQ=DB.activeQ||getCurrentQuarter();
+let editingSkill=null;
+let selectedDate=todayStr();
+
+// ============================================================
+//  DATE HELPERS
+// ============================================================
+function todayStr(){const d=new Date();return`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;}
+function p2(n){return String(n).padStart(2,'0');}
+function fmtFull(str){return new Date(str+'T00:00:00').toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}
+function fmtShort(str){return new Date(str+'T00:00:00').toLocaleDateString('en-AU',{day:'numeric',month:'short'});}
+
+// ============================================================
+//  STATS
+// ============================================================
+function scoreOf(e){if(!e)return 0;return DAILY_ITEMS.filter(s=>e[s.id]).length;}
+
+function allStats(){
+  let logged=0,totalScore=0,one=0,two=0,perfect=0,reflections=0;
+  const sc={};DAILY_ITEMS.forEach(s=>sc[s.id]=0);
+  for(const[,e] of Object.entries(DB.entries)){
+    const s=scoreOf(e);
+    if(s>0){
+      logged++;totalScore+=s;
+      if(s===1)one++;else if(s===2)two++;else perfect++;
+      DAILY_ITEMS.forEach(sk=>{if(e[sk.id])sc[sk.id]++;});
+    }
+    if(e&&((e.learned&&e.learned.trim())||(e.wentWell&&e.wentWell.trim())||(e.improve&&e.improve.trim())||(e.notes&&e.notes.trim())))reflections++;
+  }
+  const elapsed=Math.max(1,Math.floor((new Date()-START)/86400000)+1);
+  return{logged,totalScore,avg:logged>0?(totalScore/logged).toFixed(1):0,one,two,perfect,reflections,sc,elapsed};
+}
+
+function last30(){
+  const r={};DAILY_ITEMS.forEach(s=>r[s.id]=0);
+  const now=new Date();
+  for(let i=0;i<30;i++){
+    const d=new Date(now);d.setDate(d.getDate()-i);
+    const k=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+    const e=DB.entries[k];
+    if(e)DAILY_ITEMS.forEach(s=>{if(e[s.id])r[s.id]++;});
+  }
+  return r;
+}
+
+function last7(){
+  const r={};DAILY_ITEMS.forEach(s=>r[s.id]=0);
+  const now=new Date();
+  for(let i=0;i<7;i++){
+    const d=new Date(now);d.setDate(d.getDate()-i);
+    const k=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+    const e=DB.entries[k];
+    if(e)DAILY_ITEMS.forEach(s=>{if(e[s.id])r[s.id]++;});
+  }
+  return r;
+}
+
+function daysSince(id){
+  const now=new Date();
+  for(let i=1;i<=90;i++){
+    const d=new Date(now);d.setDate(d.getDate()-i);
+    const k=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+    const e=DB.entries[k];
+    if(e&&e[id])return i;
+  }
+  return 999;
+}
+
+// Current streak for an item — counts back from today. Today not yet
+// logged doesn't break the streak — you haven't missed today until
+// tomorrow. Doable on any day, work or off, so no protection needed.
+function currentStreak(id){
+  let streak=0;
+  const d=new Date();
+  for(let i=0;i<730;i++){
+    const k=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+    const e=DB.entries[k];
+    if(e&&e[id]){streak++;d.setDate(d.getDate()-1);continue;}
+    if(k===todayStr()){d.setDate(d.getDate()-1);continue;}
+    break;
+  }
+  return streak;
+}
+
+// Longest streak ever recorded — kept even after the streak breaks, so
+// a bad week doesn't erase the record of a good run.
+function bestStreak(id){
+  let best=0,running=0;
+  for(let d=new Date(START);d<=new Date();d.setDate(d.getDate()+1)){
+    const k=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+    const e=DB.entries[k];
+    if(e&&e[id]){running++;if(running>best)best=running;}
+    else running=0;
+  }
+  return best;
+}
+
+function getTask(id){return(DB.customTasks&&DB.customTasks[id])||DEFAULT_TASKS[id];}
+
+// ============================================================
+//  RENDER TODAY
+// ============================================================
+function renderToday(){
+  const isToday=(selectedDate===todayStr());
+  const isPast=selectedDate<todayStr();
+
+  document.getElementById('hdr-date').textContent=fmtFull(todayStr());
+  const stats=allStats();
+  document.getElementById('hdr-logged').textContent=stats.logged;
+
+  // Date nav
+  document.getElementById('nav-date-label').textContent=isToday?('Today — '+fmtFull(selectedDate)):fmtFull(selectedDate);
+  document.getElementById('nav-date-sub').textContent=isToday?'Tap ◀ to backfill a past day':(isPast?'Backfilling past day — changes save automatically':'');
+  const nextBtn=document.getElementById('nav-next-btn');
+  nextBtn.style.opacity=isToday?'0.3':'1';
+  nextBtn.style.pointerEvents=isToday?'none':'auto';
+  document.getElementById('today-jump-btn').style.display=isToday?'none':'block';
+
+  // Backfill banner
+  document.getElementById('backfill-banner').innerHTML=isToday?'':`<div class="backfill-banner">✏️ <strong>Backfilling ${fmtFull(selectedDate)}</strong> — tick what you actually did that day.</div>`;
+
+  const e=DB.entries[selectedDate]||{};
+
+  // Three daily items — no daily obligation, just what's true right now
+  const grid=document.getElementById('act-grid');
+  grid.innerHTML='';
+  DAILY_ITEMS.forEach(item=>{
+    const ticked=e[item.id]||false;
+    const streak=currentStreak(item.id);
+    const best=bestStreak(item.id);
+    const total=stats.sc[item.id]||0;
+    const task=getTask(item.id);
+    const streakTxt=streak>0?`🔥 ${streak} day${streak===1?'':'s'}`:'No streak yet';
+    const bestTxt=best>streak?` (best ${best})`:(best>0&&streak===best?' — your best':'');
+    const isEditing=(editingSkill===item.id)&&isToday;
+    const c=document.createElement('div');
+    c.className='act-card'+(ticked?' ticked':'');
+    c.innerHTML=`
+      <div class="act-card-top"><div class="act-icon">${item.icon}</div><div class="tick-circle">${ticked?'✓':''}</div></div>
+      <div class="act-name">${item.name}</div>
+      <div class="act-task">${task}</div>
+      ${isEditing?`<input class="task-edit-input" id="ti-${item.id}" value="${task.replace(/"/g,'&quot;')}" onclick="event.stopPropagation()" onkeydown="if(event.key==='Enter')saveTask('${item.id}')" placeholder="Update task...">`:''}
+      <div class="act-status ok">${streakTxt}${bestTxt} &nbsp;·&nbsp; Σ${total} total</div>
+      ${isToday?`<div class="edit-task-btn" onclick="event.stopPropagation();${isEditing?`saveTask('${item.id}')`:`startEdit('${item.id}')`}">${isEditing?'✓ Save':'✏️ Edit'}</div>`:''}`;
+    c.onclick=()=>toggleSkill(item.id);
+    grid.appendChild(c);
+    if(isEditing)setTimeout(()=>{const inp=document.getElementById(`ti-${item.id}`);if(inp)inp.focus();},50);
+  });
+
+  // Daily Journal — three fields, each saved independently
+  const learned=document.getElementById('notes-learned');
+  learned.value=(e.learned!==undefined?e.learned:e.notes)||'';
+  learned.oninput=()=>{
+    if(!DB.entries[selectedDate])DB.entries[selectedDate]={};
+    DB.entries[selectedDate].learned=learned.value;save();
+  };
+  const wentWell=document.getElementById('notes-wentwell');
+  wentWell.value=e.wentWell||'';
+  wentWell.oninput=()=>{
+    if(!DB.entries[selectedDate])DB.entries[selectedDate]={};
+    DB.entries[selectedDate].wentWell=wentWell.value;save();
+  };
+  const improve=document.getElementById('notes-improve');
+  improve.value=e.improve||'';
+  improve.oninput=()=>{
+    if(!DB.entries[selectedDate])DB.entries[selectedDate]={};
+    DB.entries[selectedDate].improve=improve.value;save();
+  };
+
+  // Focus areas — static reference, rendered once, doesn't depend on selectedDate
+  const fa=document.getElementById('focus-areas');
+  if(fa&&!fa.dataset.rendered){
+    fa.innerHTML=SKILLS.map(sk=>`
+      <div class="focus-row" onclick="showTab('goals',document.querySelectorAll('.nav-tab')[2])">
+        <div class="focus-icon">${sk.icon}</div>
+        <div><div class="focus-name">${sk.name}</div><div class="focus-blurb">${sk.blurb}</div></div>
+      </div>`).join('');
+    fa.dataset.rendered='1';
+  }
+}
+
+// ============================================================
+//  RENDER PROGRESS
+// ============================================================
+function renderProgress(){
+  const stats=allStats(),l30=last30();
+
+  document.getElementById('overview-stats').innerHTML=[
+    {lbl:'Active Days',val:stats.logged},
+    {lbl:'Perfect Days',val:stats.perfect},
+    {lbl:'Avg / Day',val:stats.avg+'/3'},
+    {lbl:'Reflections Written',val:stats.reflections},
+    {lbl:'Journey',val:Math.min(100,Math.round(stats.elapsed/TOTAL_DAYS*100))+'%',badge:'Day '+stats.elapsed+' of '+TOTAL_DAYS},
+  ].map(s=>`<div class="stat-box"><div class="stat-num">${s.val}</div><div class="stat-lbl">${s.lbl}</div>${s.badge?`<div class="stat-badge badge-ok">${s.badge}</div>`:''}</div>`).join('');
+
+  const tot=stats.one+stats.two+stats.perfect||1;
+  document.getElementById('score-breakdown').innerHTML=`<div class="breakdown-grid">
+    <div class="breakdown-box" style="background:var(--diamond)"><div class="bd-num" style="color:var(--diamond-d)">${stats.one}</div><div class="bd-lbl" style="color:var(--diamond-d)">1 done</div><div class="bd-pct" style="color:var(--diamond-d)">${Math.round(stats.one/tot*100)}%</div></div>
+    <div class="breakdown-box" style="background:var(--green)"><div class="bd-num" style="color:var(--green-d)">${stats.two}</div><div class="bd-lbl" style="color:var(--green-d)">2 done</div><div class="bd-pct" style="color:var(--green-d)">${Math.round(stats.two/tot*100)}%</div></div>
+    <div class="breakdown-box" style="background:var(--diamond)"><div class="bd-num" style="color:var(--diamond-d)">${stats.perfect}</div><div class="bd-lbl" style="color:var(--diamond-d)">All 3 done</div><div class="bd-pct" style="color:var(--diamond-d)">${Math.round(stats.perfect/tot*100)}%</div></div>
+  </div>`;
+
+  document.getElementById('skill-alltime').innerHTML=DAILY_ITEMS.map(item=>{
+    const total=stats.sc[item.id];
+    const streak=currentStreak(item.id);
+    const best=bestStreak(item.id);
+    return`<div class="prog-row">
+      <div class="prog-header"><span>${item.icon} <strong>${item.name}</strong> — 🔥 ${streak} day streak${best>streak?` (best ${best})`:''}</span><span style="color:var(--muted)">Σ ${total} total</span></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('skill-30day').innerHTML=
+    `<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Sessions logged in the last 30 days, out of 30 possible</div>`+
+    DAILY_ITEMS.map(item=>{
+      const count=l30[item.id];
+      const pct=Math.min(100,Math.round(count/30*100));
+      const cls=pct>=70?'fill-good':pct>=35?'fill-warn':'fill-behind';
+      return`<div class="prog-row">
+        <div class="prog-header"><span>${item.icon} ${item.name}</span><span style="color:var(--muted)">${count}/30 days</span></div>
+        <div class="prog-bar"><div class="prog-fill ${cls}" style="width:${pct}%"></div></div>
+      </div>`;
+    }).join('');
+}
+
+// ============================================================
+//  RENDER GOALS
+// ============================================================
+function renderGoals(){
+  // Quick view — one card per skill with current focus and Q milestone
+  const curQ=getCurrentQuarter();
+  const QUICK_NOW=[
+    'Fly excellently every sector. Read OM1 and OM4 chapters. Build and drill decision making model (T-DODAR). Start Turn the Ship Around.',
+    'Boot.dev, short sessions, a couple of times a week. No deadline attached — just enjoyable and consistent.',
+    'Read Barefoot Investor chapters. Prep questions for Riley. Review ETF allocation and super contributions, and understand the reasoning behind them.',
+    'Read Make It Stick. Apply retrieval practice to Boot.dev study sessions. Notice and name your stress response under pressure on the line.',
+    'Training session 4–5x/week. Establish zone 2 cardio 3x/week. Read Outlive. Implement evidence-based sleep protocol.',
+  ];
+  const COLOURS=['#1F3A5F','#2E5490','#1A6B3C','#7D3C98','#B7770D'];
+  document.getElementById('skills-quick').innerHTML=DEEP_DIVES.map((s,i)=>`
+    <div class="skill-goal-card" style="border-left-color:${COLOURS[i]}">
+      <div class="sg-title" style="color:${COLOURS[i]}">Skill ${s.num}: ${s.name}</div>
+      <div class="sg-now" style="font-size:12px;color:var(--text);margin-top:5px;line-height:1.6"><strong>Now:</strong> ${QUICK_NOW[i]}</div>
+      <span class="sg-milestone">${ALL_MILESTONES[curQ].items[i].text}</span>
+    </div>`).join('');
+
+  // Quarter selector
+  document.getElementById('q-selector').innerHTML=Object.keys(ALL_MILESTONES).map(k=>`
+    <div class="q-btn${k===activeQ?' active':''}${k===curQ?' current':''}" onclick="selectQ('${k}')">
+      ${ALL_MILESTONES[k].label}${k===curQ?' ← now':''}
+    </div>`).join('');
+
+  const qData=ALL_MILESTONES[activeQ];
+  document.getElementById('q-milestones').innerHTML=
+    `<div style="font-size:12px;color:var(--muted);margin-bottom:14px">${qData.due}${activeQ===curQ?' — current quarter':' — reviewing this quarter'}</div>`+
+    qData.items.map(m=>{
+      const msKey=`${activeQ}_${m.id}`;
+      const done=DB.milestones[msKey]||false;
+      return`<div class="ms-item${done?' done-item':''}">
+        <input type="checkbox" ${done?'checked':''} onchange="toggleMs('${msKey}',this.checked)">
+        <span>${m.text}</span>
+      </div>`;
+    }).join('');
+
+  // Deep dives
+  if(!DB.openDives)DB.openDives={};
+  document.getElementById('deep-dives').innerHTML=DEEP_DIVES.map(s=>{
+    const isOpen=DB.openDives[s.num]||false;
+    return`<div class="accordion-item">
+      <div class="accordion-header${isOpen?' open':''}" onclick="toggleDive('${s.num}')">
+        <div class="accordion-title" style="color:${isOpen?'var(--bg)':s.colour}">Skill ${s.num}: ${s.name}</div>
+        <div class="accordion-arrow">${isOpen?'▲':'▼'}</div>
+      </div>
+      <div class="accordion-body${isOpen?' open':''}">
+        <p class="dd-intro">${s.intro}</p>
+        <div class="dd-section">What it looks like in practice</div>
+        <ul class="dd-list">${s.practice.map(p=>`<li>${p}</li>`).join('')}</ul>
+        <div class="dd-section">Resources — in order</div>
+        ${s.resources.map(r=>`<div class="dd-res-item${r.top?' top':''}">
+          ${r.top?'⭐ ':''}<strong>${r.t}</strong>
+          ${r.note?`<div class="dd-res-note">${r.note}</div>`:''}
+        </div>`).join('')}
+        <div class="dd-section">Progression path</div>
+        <div class="prog-path">
+          <div class="prog-path-title">Month by month</div>
+          ${s.progression.map((p,i)=>`<div class="prog-path-item">
+            <div class="prog-path-dot">${i+1}</div>
+            <div><div class="prog-path-period">${p.period}</div><div class="prog-path-desc">${p.desc}</div></div>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Reading list
+  document.getElementById('reading-list').innerHTML=Object.entries(READING_ALL).map(([cat,books])=>`
+    <div class="reading-section">
+      <div class="reading-cat">${cat}</div>
+      ${books.map(b=>`<div class="reading-item${b.top?' top':''}">${b.top?'⭐ ':''}${b.t}</div>`).join('')}
+    </div>`).join('');
+
+  // Parking lot
+  const pl=document.getElementById('parking-lot');
+  pl.value=DB.parking||'';
+  pl.oninput=()=>{DB.parking=pl.value;save();};
+}
+
+// ============================================================
+//  RENDER HISTORY
+// ============================================================
+function renderHistory(){
+  const grid=document.getElementById('cal-grid');
+  grid.innerHTML='';
+  const now=new Date();
+  const startMon=new Date(now);
+  const dow=startMon.getDay();
+  startMon.setDate(startMon.getDate()-(dow===0?6:dow-1)-56);
+  for(let i=0;i<63;i++){
+    const d=new Date(startMon);d.setDate(d.getDate()+i);
+    const k=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+    const future=d>now;
+    const e=DB.entries[k];
+    const score=scoreOf(e);
+    let cls='cal-cell ',lbl='';
+    if(future){cls+='cal-future';}
+    else if(score===0){cls+='cal-0';lbl=d.getDate();}
+    else if(score===1){cls+='cal-building';lbl=score;}
+    else if(score===2){cls+='cal-green';lbl=score;}
+    else{cls+='cal-diamond';lbl=score;}
+    const c=document.createElement('div');
+    c.className=cls;c.textContent=lbl;
+    c.title=fmtShort(k)+(score>0?` — ${score}/3 done`:'')+(future?'':' (tap to edit)');
+    if(!future){
+      c.onclick=()=>{
+        selectedDate=k;
+        showTab('today',document.querySelector('.nav-tab'));
+        renderToday();
+      };
+    }
+    grid.appendChild(c);
+  }
+
+  const now2=new Date();
+  const months=[];
+  for(let i=0;i<6;i++){
+    const d=new Date(now2.getFullYear(),now2.getMonth()-i,1);
+    months.push({key:`${d.getFullYear()}-${p2(d.getMonth()+1)}`,
+                 lbl:d.toLocaleDateString('en-AU',{month:'long',year:'numeric'})});
+  }
+  document.getElementById('monthly-reflections').innerHTML=months.map(m=>`
+    <div style="margin-bottom:16px">
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px">${m.lbl}</div>
+      <textarea class="reflect-area" placeholder="What worked? What to change? (2 minutes — be honest)" onchange="saveReflect('${m.key}',this.value)">${DB.reflections[m.key]||''}</textarea>
+    </div>`).join('');
+}
+
+// ============================================================
+//  ACTIONS
+// ============================================================
+function toggleSkill(id){
+  if(!DB.entries[selectedDate])DB.entries[selectedDate]={};
+  DB.entries[selectedDate][id]=!DB.entries[selectedDate][id];
+  save();renderToday();
+}
+function startEdit(id){editingSkill=id;renderToday();}
+function saveTask(id){
+  const inp=document.getElementById(`ti-${id}`);
+  if(inp){if(!DB.customTasks)DB.customTasks={};DB.customTasks[id]=inp.value.trim()||DEFAULT_TASKS[id];save();}
+  editingSkill=null;renderToday();
+}
+function toggleMs(key,checked){DB.milestones[key]=checked;save();}
+function selectQ(q){activeQ=q;DB.activeQ=q;save();renderGoals();}
+function saveReflect(key,val){DB.reflections[key]=val;save();}
+function toggleDive(num){
+  if(!DB.openDives)DB.openDives={};
+  DB.openDives[num]=!DB.openDives[num];save();renderGoals();
+}
+function shiftDay(dir){
+  const d=new Date(selectedDate+'T00:00:00');
+  d.setDate(d.getDate()+dir);
+  const next=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+  if(next>todayStr())return;
+  selectedDate=next;editingSkill=null;renderToday();
+}
+function goToToday(){selectedDate=todayStr();editingSkill=null;renderToday();}
+
+// ============================================================
+//  NAVIGATION
+// ============================================================
+function showTab(tabId,el){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+tabId).classList.add('active');
+  el.classList.add('active');
+  if(tabId==='progress')renderProgress();
+  if(tabId==='goals')renderGoals();
+  if(tabId==='history')renderHistory();
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+renderToday();
+</script>
+</body>
+</html>
